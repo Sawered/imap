@@ -272,9 +272,10 @@ class ExtendedHeaders extends Parameters
         if(!is_null($charset)){
 
             if(in_array($charset, ['ansi'])) {
-                $charsetDetector = new Encoding();
-                $charset = $charsetDetector->detectMaxRelevant($content);
+                $charset = $this->getCursetDetector()->detectMaxRelevant($content);
             }
+
+            $charset = strtolower(trim($charset));
 
             try{
                 $content =  Transcoder::create()->transcode(
@@ -288,6 +289,16 @@ class ExtendedHeaders extends Parameters
             }
         }
         return $content;
+    }
+
+    protected function getCursetDetector() {
+        static $charsetDetector = null;
+
+        if(is_null($charsetDetector)) {
+            $charsetDetector = new Encoding();
+        }
+
+        return $charsetDetector;
     }
 
     /**
