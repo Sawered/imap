@@ -130,7 +130,7 @@ class Mailbox implements \IteratorAggregate
      * Возвращает массив UID писем по критерию и сортировке
      *
      * @param int $sort SORTDATE | SORTARRIVAL |..
-     * @return void
+     * @return array
      **/
     public function getMessageNumbers(SearchExpression $search = null,$sort = \SORTARRIVAL,$reverse = false)
     {

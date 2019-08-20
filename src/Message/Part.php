@@ -11,6 +11,9 @@ use Exception;
  */
 class Part implements \RecursiveIterator
 {
+    const PART_TYPE_ATTACHMENT = 'attachment';
+    const PART_TYPE_INLINE = 'inline';
+    
     const TYPE_TEXT = 'text';
     const TYPE_MULTIPART = 'multipart';
     const TYPE_MESSAGE = 'message';
@@ -252,7 +255,7 @@ class Part implements \RecursiveIterator
                     $partNumber = (string) ($this->partNumber . '.' . ($key+1));
                 }
 
-                if ($this->isAttachment($partStructure)) {
+                if ($this->getDispositionType($partStructure)) {
                     $this->parts[] = new Attachment($this->stream, $this->messageNumber, $partNumber, $partStructure);
                 } else {
                     $this->parts[] = new Part($this->stream, $this->messageNumber, $partNumber, $partStructure);
@@ -330,25 +333,31 @@ class Part implements \RecursiveIterator
         );
     }
 
-    private function isAttachment($part)
+    /**
+     * @param $part
+     * @return null|string
+     */
+    private function getDispositionType($part)
     {
         // Attachment with correct Content-Disposition header
 
+//        var_dump($part->ifdparameters,);
         if (isset($part->disposition)) {
             $disposition = strtolower($part->disposition);
             if ('attachment' === $disposition) {
-                return true;
+                return self::PART_TYPE_ATTACHMENT;
+            }elseif('inline' === $disposition){
+                $subtype = strtolower($part->subtype);
+                var_dump('inline');
+                if(isset($part->dparameters)){
+                    var_dump($part->dparameters);
+                }
+                if($subtype == self::SUBTYPE_PLAIN || $subtype == self::SUBTYPE_HTML){
+                    return null;
+                }
+                return self::PART_TYPE_INLINE;
             }
-            $subtype = strtolower($part->subtype);
-            if('inline' === $disposition
-                && (
-                    $subtype == self::SUBTYPE_PLAIN
-                    || $subtype == self::SUBTYPE_HTML
-                )
-            ){
-                return false;
-            }
-            return true;
+            return self::PART_TYPE_ATTACHMENT;
         }
 
         // Attachment without Content-Disposition header
@@ -357,12 +366,12 @@ class Part implements \RecursiveIterator
                 if ('name' === strtolower($parameter->attribute)
                     || 'filename' === strtolower($parameter->attribute)
                 ) {
-                    return true;
+                    return self::PART_TYPE_ATTACHMENT;
                 }
             }
         }
 
-        return false;
+        return null;
     }
 
     public function debugParts($pref = '')
