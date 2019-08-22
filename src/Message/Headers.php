@@ -82,7 +82,7 @@ class Headers extends Parameters
             case 'maildate':
                 // no break
             case 'date':
-                $value = $this->decode($value);
+                $value = static::decode($value);
                 $value = preg_replace('/([^\(]*)\(.*\)/', '$1', $value);
                 $value = str_replace(array(' UT',' UCT'),' UTC',$value);
                 try{
@@ -94,30 +94,30 @@ class Headers extends Parameters
             case 'sender':
                 //nobreak
             case 'from':
-                return $this->decodeEmailAddress(current($value));
+                return static::decodeEmailAddress(current($value));
             case 'to':
                 // no break
             case 'cc':
                 $emails = [];
                 foreach ($value as $address) {
-                    $emails[] = $this->decodeEmailAddress($address);
+                    $emails[] = static::decodeEmailAddress($address);
                 }
 
                 return $emails;
             case 'subject':
-                return $this->decode($value);
+                return static::decode($value);
             default:
                 return $value;
         }
     }
 
-    private function decodeEmailAddress($value)
+    private static function decodeEmailAddress($value)
     {
         $mailbox = property_exists($value,'mailbox')?$value->mailbox:null; //sometimes property is not exists
         return new EmailAddress(
             $mailbox,
             isset($value->host) ? $value->host : null,
-            isset($value->personal) ? $this->decode($value->personal) : null
+            isset($value->personal) ? static::decode($value->personal) : null
         );
     }
 }

@@ -257,7 +257,7 @@ class Message extends Message\Part
             //$headers = imap_fetchheader($this->stream, $this->messageNumber, \FT_UID);
             $headersText = imap_fetchbody($this->stream, $this->messageNumber, '0', \FT_UID | \FT_PEEK );
 
-            $this->extHeaders = new Message\ExtendedHeaders($headersText);
+            $this->extHeaders =  Message\ExtendedHeaders::fromString($headersText);
         }
 
         return $this->extHeaders;

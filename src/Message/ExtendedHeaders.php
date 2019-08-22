@@ -14,39 +14,50 @@ use Exception;
  */
 class ExtendedHeaders extends Parameters
 {
-    /**
-     * Constructor
-     *
-     * @param \stdClass $headers
-     */
-    public function __construct($headersText)
+    
+    public static function fromString(string $headersText)
     {
         //некоторые умники не кодируют тему письма, и кодировка заголовков
         //не 7/8 бит и не UTF-8 после парсинга заголовков восстановить
         //кодировку уже не получится, поэтому попытаемся это сделать в самом начале
-        $headersText = $this->fixEncoding($headersText);
-        $items = self::parse($headersText);
-
+        $headersText = static::fixEncoding($headersText);
+        $headers = static::parse($headersText);
+       
+        return static::fromRawHeaders();
+    }
+    
+    public static function fromRawHeaders(array $headers)
+    {
         $multiple = ['received'];
-        foreach($items as $k => $item){
+        $parameters = [];
+        foreach($headers as $k => $item){
             $name = strtolower($item['name']);
-            $value = $this->parseHeader($name,$item['value']);
+            $value = static::parseHeader($name,$item['value']);
 
-            if(isset($this->parameters[$name])){
-               if(!is_array($this->parameters[$name])){
-                   $this->parameters[$name] = array($this->parameters[$name]);
-               }
-               $this->parameters[$name][] = $value;
-               continue;
+            if(isset($parameters[$name])){
+                if(!is_array($parameters[$name])){
+                    $parameters[$name] = array($parameters[$name]);
+                }
+                $parameters[$name][] = $value;
+                continue;
             }
 
             if(in_array($name,$multiple)){
 
-                $this->parameters[$name][] = $value;
+                $parameters[$name][] = $value;
             }else{
-                $this->parameters[$name] = $value;
+                $parameters[$name] = $value;
             }
         }
+        
+        $obj = new static();
+        $obj->setParameters($parameters);
+        return $obj;
+    }
+    
+    protected function setParameters(array $parameters)
+    {
+        $this->parameters = $parameters;
     }
 
     /**
@@ -54,7 +65,7 @@ class ExtendedHeaders extends Parameters
      *
      * @param string $key
      *
-     * @return string
+     * @return mixed
      */
     public function get($key)
     {
@@ -103,7 +114,7 @@ class ExtendedHeaders extends Parameters
         return $headers;
     }
 
-    public function parseHeader($name,$value)
+    public static function parseHeader(string $name, $value)
     {
         if($name == 'from'
             || $name == 'sender'
@@ -115,14 +126,14 @@ class ExtendedHeaders extends Parameters
             if(strpos($value,'undisclosed-recipients') !==false){
                 return null;
             }
-            $items = $this->parseAddrList($value);
+            $items = static::parseAddrList($value);
 
             foreach($items as $k =>$item){
                 if(!property_exists($item,'host') || $item->host === '.SYNTAX-ERROR.'){
                     unset($items[$k]);
                     continue;
                 }
-                $items[$k] = $this->decodeEmailAddress($item);
+                $items[$k] = static::decodeEmailAddress($item);
             }
 
             if($name == 'from'
@@ -135,21 +146,25 @@ class ExtendedHeaders extends Parameters
         }
 
         if($name == 'received'){
-            return $this->parseReceivedHeader($value);
+            return static::parseReceivedHeader($value);
         }
 
         if($name == 'return-path'){
-            $value = preg_replace('/.*<([^<>]+)>.*/','$1',$value);
+            return preg_replace('/.*<([^<>]+)>.*/','$1',$value);
         }
 
         if($name == 'subject'){
-            return $this->decode($value);
+            return static::decode($value);
         }
 
+        if($name == 'date'){
+            return static::decodeDate($value);
+        }
+        
         return $value;
     }
 
-    protected function parseAddrList($value)
+    protected static function parseAddrList($value)
     {
         $items = imap_rfc822_parse_adrlist($value,'nodomain');
 
@@ -159,12 +174,12 @@ class ExtendedHeaders extends Parameters
     }
 
 
-    private function decodeEmailAddress($value)
+    private static function decodeEmailAddress($value)
     {
 
         $mailbox = property_exists($value,'mailbox')?$value->mailbox:null; //sometimes property is not exists
         $host = property_exists($value,'host') ? $value->host : null;
-        $personal = property_exists($value, 'personal') ? $this->decode($value->personal) : null;
+        $personal = property_exists($value, 'personal') ? static::decode($value->personal) : null;
 
 
         return new EmailAddress(
@@ -174,7 +189,7 @@ class ExtendedHeaders extends Parameters
         );
     }
 
-    protected function parseReceivedHeader($value)
+    protected static function parseReceivedHeader($value)
     {
         // received    =  "Received"    ":"            ; one per relay
         //                   ["from" domain]           ; sending host
@@ -187,9 +202,9 @@ class ExtendedHeaders extends Parameters
 
         $result = [];
         if(strpos($value,';') !== false){
-            list($value,$date) = $this->splitReceivedDate($value);
+            list($value,$date) = static::splitReceivedDate($value);
             if($date){
-                $result['date'] = $this->decodeDate($date);
+                $result['date'] = static::decodeDate($date);
             }
         }
 
@@ -229,7 +244,7 @@ class ExtendedHeaders extends Parameters
         return $result;
     }
 
-    protected function splitReceivedDate($value)
+    protected static function splitReceivedDate(string $value)
     {
         $len = strlen($value);
         $lastPos =  strrpos($value,';');
@@ -242,9 +257,9 @@ class ExtendedHeaders extends Parameters
         return [$other,$date];
     }
 
-    protected function decodeDate($value)
+    protected static function decodeDate($value)
     {
-        $value = $this->decode($value);
+        $value = static::decode($value);
 
         if(empty($value)){
             return null;
@@ -265,14 +280,14 @@ class ExtendedHeaders extends Parameters
      *
      * @return string
      **/
-    public function fixEncoding($content)
+    public static function fixEncoding(string $content)
     {
-        $charset = $this->getCharset($content);
+        $charset = static::getCharset($content);
 
         if(!is_null($charset)){
 
             if(in_array($charset, ['ansi'])) {
-                $charset = $this->getCursetDetector()->detectMaxRelevant($content);
+                $charset = static::getCursetDetector()->detectMaxRelevant($content);
             }
 
             $charset = strtolower(trim($charset));
@@ -291,7 +306,8 @@ class ExtendedHeaders extends Parameters
         return $content;
     }
 
-    protected function getCursetDetector() {
+    protected static function getCharsetDetector()
+    {
         static $charsetDetector = null;
 
         if(is_null($charsetDetector)) {
@@ -307,7 +323,7 @@ class ExtendedHeaders extends Parameters
      * @return string
      * @author skoryukin
      **/
-    protected function getCharset($content)
+    protected static function getCharset(string $content)
     {
         $matches = [];
         $charset = null;

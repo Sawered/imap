@@ -19,7 +19,7 @@ class Parameters
     {
         foreach ($parameters as $parameter) {
             $key = strtolower($parameter->attribute);
-            $value = $this->decode($parameter->value);
+            $value = static::decode($parameter->value);
             $this->parameters[$key] = $value;
         }
     }
@@ -39,7 +39,7 @@ class Parameters
     }
 
 
-    protected function decode($value)
+    protected static function decode($value)
     {
         $decoded = '';
         $parts = imap_mime_header_decode($value);
