@@ -23,7 +23,7 @@ class ExtendedHeaders extends Parameters
         $headersText = static::fixEncoding($headersText);
         $headers = static::parse($headersText);
        
-        return static::fromRawHeaders();
+        return static::fromRawHeaders($headers);
     }
     
     public static function fromRawHeaders(array $headers)
