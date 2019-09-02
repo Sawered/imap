@@ -90,11 +90,9 @@ class Server
     public function authenticate($username, $password)
     {
         // Wrap imap_open, which gives notices instead of exceptions
-//        set_error_handler([$this,'errorHandler']);
+        set_error_handler([$this,'errorHandler']);
         $this->lastError = null;
 
-        var_dump($this->getServerString());
-        var_dump('imap_open',$username,base64_encode($password));
         $resource = imap_open(
             $this->getServerString(),
             $username,
@@ -103,9 +101,8 @@ class Server
             1,
             $this->parameters
         );
-        var_dump($resource);
 
-//        restore_error_handler();
+        restore_error_handler();
         if($this->lastError){
             throw $this->lastError;
         }
@@ -115,7 +112,6 @@ class Server
         }
 
 
-        var_dump($resource);
         $check = imap_check($resource);
         $mailbox = $check->Mailbox;
         $this->connection = substr($mailbox, 0, strpos($mailbox, '}')+1);
