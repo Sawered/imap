@@ -18,7 +18,7 @@ class Expr extends AbstractCondition
         return implode(' ',$this->operators);
     }
 
-    public function on(DateTime $date )
+    public function on(\DateTimeInterface $date )
     {
         $this->operators[] =  new Date\On($date);
         return $this;
@@ -31,13 +31,13 @@ class Expr extends AbstractCondition
         return $this;
     }
 
-    public function since(DateTime $date)
+    public function since(\DateTimeInterface $date)
     {
         $this->operators[] =  new Date\Since($date);
         return $this;
     }
 
-    public function before(DateTime $date)
+    public function before(\DateTimeInterface $date)
     {
         $this->operators[] =  new Date\Before($date);
         return $this;

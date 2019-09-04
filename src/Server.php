@@ -86,6 +86,8 @@ class Server
      *
      * @return Connection
      * @throws AuthenticationFailedException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
      */
     public function authenticate($username, $password)
     {

@@ -29,7 +29,7 @@ abstract class AbstractDate extends AbstractCondition
      *
      * @param DateTime $date Optional date for the condition.
      */
-    public function __construct(DateTime $date = null)
+    public function __construct(\DateTimeInterface $date = null)
     {
         if ($date) {
             $this->setDate($date);
@@ -41,7 +41,7 @@ abstract class AbstractDate extends AbstractCondition
      *
      * @param DateTime $date
      */
-    public function setDate(DateTime $date)
+    public function setDate(\DateTimeInterface $date)
     {
         $this->date = $date;
     }
