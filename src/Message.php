@@ -2,6 +2,7 @@
 
 namespace Ddeboer\Imap;
 
+use Ddeboer\Imap\Exception\MailboxDoesNotExistException;
 use Ddeboer\Imap\Exception\MessageDoesNotExistException;
 use Ddeboer\Imap\Message\EmailAddress;
 use Ddeboer\Imap\Exception\MessageDeleteException;
@@ -26,11 +27,15 @@ class Message extends Message\Part
     protected $rawBody;
 
     protected $loaded = false;
+
     /**
      * Constructor
      *
-     * @param resource $stream        IMAP stream
-     * @param int      $messageNumber Message number
+     * @noinspection PhpMissingParentConstructorInspection
+     * @param resource $stream IMAP stream
+     * @param int $messageNumber Message number
+     * @param bool $lazyLoad
+     * @throws MessageDoesNotExistException
      */
     public function __construct($stream, $messageNumber,$lazyLoad = false)
     {
@@ -479,6 +484,7 @@ class Message extends Message\Part
 
     /**
      * Load message structure
+     * @throws MessageDoesNotExistException
      */
     private function loadStructure()
     {

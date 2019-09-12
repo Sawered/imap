@@ -4,6 +4,7 @@ namespace Ddeboer\Imap;
 
 use Ddeboer\Imap\Exception\Exception;
 use Ddeboer\Imap\Exception\MailboxOpenException;
+use Ddeboer\Imap\Exception\MessageDoesNotExistException;
 use Ddeboer\Transcoder\Transcoder;
 /**
  * An IMAP mailbox (commonly referred to as a ‘folder’)
@@ -151,8 +152,10 @@ class Mailbox implements \IteratorAggregate
      * Get a message by message number
      *
      * @param int $number Message number
-     *
+     * @param bool $lazyLoad
      * @return Message
+     * @throws MailboxOpenException
+     * @throws MessageDoesNotExistException
      */
     public function getMessage($number,$lazyLoad = false)
     {
