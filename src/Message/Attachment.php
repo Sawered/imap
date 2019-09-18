@@ -18,7 +18,7 @@ class Attachment extends Part
      */
     public function getFilename()
     {
-        $fname =  $this->parameters->get('filename')?: $this->parameters->get('name');
+        $fname =  (string)($this->parameters->get('filename')?: $this->parameters->get('name'));
         //RFCs 2047, 2231 and 5987
         //http://tools.ietf.org/html/rfc5987
 
@@ -41,7 +41,7 @@ class Attachment extends Part
         }
 
 
-        return $fname;
+        return empty($fname)?'':$fname;
     }
 
     /**
@@ -51,6 +51,6 @@ class Attachment extends Part
      */
     public function getSize()
     {
-        return $this->parameters->get('size');
+        return (int)$this->parameters->get('size');
     }
 }
