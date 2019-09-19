@@ -64,7 +64,7 @@ class Part implements \RecursiveIterator
 
     protected $encoding;
 
-    protected $bytes;
+    protected $bytes = 0;
 
     protected $lines;
 
@@ -92,6 +92,7 @@ class Part implements \RecursiveIterator
     protected $disposition;
 
     private $lastException;
+
     /**
      * Constructor
      *
@@ -133,6 +134,9 @@ class Part implements \RecursiveIterator
         return $this->encoding;
     }
 
+    /**
+     * @return int
+     */
     public function getBytes()
     {
         return $this->bytes;
@@ -217,22 +221,17 @@ class Part implements \RecursiveIterator
             $this->type = self::TYPE_UNKNOWN;
         }
 
-        //var_dump('encoding',$structure->encoding);
         if(array_key_exists($structure->encoding,$this->encodingsMap)){
             $this->encoding = $this->encodingsMap[$structure->encoding];
         }
-        //else{
-            //var_dump('no encoding',$structure->encoding);
-            //var_dump($this->doGetContent());
-        //}
 
         $this->subtype = strtolower($structure->subtype);
 
         if (isset($structure->bytes)) {
-            $this->bytes = $structure->bytes;
+            $this->bytes = (int)$structure->bytes;
         }
 
-        foreach (array('disposition', 'bytes', 'description') as $optional) {
+        foreach (array('disposition','description') as $optional) {
             if (isset($structure->$optional)) {
                 $this->$optional = $structure->$optional;
             }
