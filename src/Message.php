@@ -18,10 +18,6 @@ class Message extends Message\Part
     private $extHeaders;
     private $attachments;
 
-    /**
-     * @var boolean
-     */
-    private $keepUnseen = true;
 
     protected $rawHeaders;
     protected $rawBody;
@@ -466,21 +462,6 @@ class Message extends Message\Part
         return $this;
     }
 
-    /**
-     * Prevent the message from being marked as seen
-     *
-     * Defaults to false, so messages that are read will be marked as seen.
-     *
-     * @param bool $bool
-     *
-     * @return Message
-     */
-    public function keepUnseen($bool = true)
-    {
-        $this->keepUnseen = (bool) $bool;
-
-        return $this;
-    }
 
     /**
      * Load message structure

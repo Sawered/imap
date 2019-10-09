@@ -2,6 +2,7 @@
 
 namespace Ddeboer\Imap\Message;
 
+use Ddeboer\Imap\Message;
 use Ddeboer\Imap\Parameters;
 use Ddeboer\Imap\Exception\UnknownEncodingException;
 use Exception;
@@ -58,6 +59,11 @@ class Part implements \RecursiveIterator
         7 => self::ENCODING_QUOTED_PRINTABLE,// for case "quoted/printable"
     );
 
+    /**
+     * @var boolean
+     */
+    protected $keepUnseen = true;
+
     protected $type;
 
     protected $subtype;
@@ -113,6 +119,21 @@ class Part implements \RecursiveIterator
         $this->structure = $structure;
         $this->parseStructure($structure);
     }
+    /**
+     * Prevent the message from being marked as seen
+     *
+     * Defaults to false, so messages that are read will be marked as seen.
+     *
+     * @param bool $bool
+     *
+     * @return self
+     */
+    public function keepUnseen($bool = true)
+    {
+        $this->keepUnseen = (bool) $bool;
+
+        return $this;
+    }
 
     public function getCharset()
     {
@@ -160,7 +181,7 @@ class Part implements \RecursiveIterator
     public function getContent()
     {
         if (null === $this->content) {
-            $this->content = $this->doGetContent();
+            $this->content = $this->doGetContent($this->keepUnseen);
         }
 
         return $this->content;
@@ -255,10 +276,12 @@ class Part implements \RecursiveIterator
                 }
 
                 if ($this->getDispositionType($partStructure)) {
-                    $this->parts[] = new Attachment($this->stream, $this->messageNumber, $partNumber, $partStructure);
+                    $part = new Attachment($this->stream, $this->messageNumber, $partNumber, $partStructure);
                 } else {
-                    $this->parts[] = new Part($this->stream, $this->messageNumber, $partNumber, $partStructure);
+                    $part = new Part($this->stream, $this->messageNumber, $partNumber, $partStructure);
                 }
+                $part->keepUnseen($this->keepUnseen);
+                $this->parts[] = $part;
             }
         }
     }
