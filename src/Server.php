@@ -36,9 +36,9 @@ class Server
     private $parameters = [];
 
     protected static $authTypes = [
-
         "XOAUTH2",
         "LOGIN",
+        "PLAIN",
         "CRAM-MD5",
         "NTLM",
         "GSSAPI",
@@ -109,16 +109,19 @@ class Server
 
         $params = $this->parameters;
 
-        $usedAuth = $auth->getFallBackTypes();
-        $usedAuth[] = $auth->getType();
-        $disabledAuths = array_diff(static::$authTypes, $usedAuth);
+        if ($this->hasAddition('IMAP_ADDITIONS_AUTH_SWITCH')) {
+            $usedAuth = $auth->getFallBackTypes();
+            $usedAuth[] = $auth->getType();
+            $disabledAuths = array_diff(static::$authTypes, $usedAuth);
 
-        if (!empty($disabledAuths)) {
-            if (isset($params['DISABLE_AUTHENTICATOR'])) {
-                $disabledAuths = array_merge((array)$params['DISABLE_AUTHENTICATOR'], $disabledAuths);
-                $disabledAuths = array_unique($disabledAuths);
+            if (!empty($disabledAuths)) {
+                if (isset($params['DISABLE_AUTHENTICATOR'])) {
+                    $disabledAuths = array_merge((array)$params['DISABLE_AUTHENTICATOR'], $disabledAuths);
+                    $disabledAuths = array_unique($disabledAuths);
+                }
+                $params['DISABLE_AUTHENTICATOR'] = $disabledAuths;
+                $params['ENABLE_AUTHENTICATOR'] = $usedAuth;
             }
-            $params ['DISABLE_AUTHENTICATOR'] = $disabledAuths;
         }
 
         $resource = imap_open(
@@ -151,6 +154,20 @@ class Server
         return new Connection($resource, $this->connection);
     }
 
+    /**
+     * @param string $name  'IMAP_ADDITIONS_AUTH_SWITCH' | 'IMAP_ADDITIONS_AUTH_XOAUTH2'
+     *
+     */
+    protected function hasAddition($name)
+    {
+        $hasAddition = false;
+
+        //added with custom patch to php-imap
+        if(defined('IMAP_ADDITIONS') &&defined($name)){
+           $hasAddition =  (IMAP_ADDITIONS & constant($name)) === constant($name);
+        }
+        return $hasAddition;
+    }
     /**
      * Glues hostname, port and flags and returns result
      *
