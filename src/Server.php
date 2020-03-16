@@ -2,6 +2,7 @@
 
 namespace Ddeboer\Imap;
 
+use Ddeboer\Imap\Auth\AuthCredentialsInterface;
 use Ddeboer\Imap\Exception\AuthenticationFailedException;
 
 /**
@@ -32,7 +33,16 @@ class Server
     /**
      * @var array
      */
-    private $parameters;
+    private $parameters = [];
+
+    protected static $authTypes = [
+
+        "XOAUTH2",
+        "LOGIN",
+        "CRAM-MD5",
+        "NTLM",
+        "GSSAPI",
+    ];
 
     /**
      * @var int Options bitmask
@@ -51,14 +61,17 @@ class Server
 
     /** @var  \Throwable */
     private $lastError;
+
     /**
      * Constructor
      *
-     * @param string $hostname   Internet domain name or bracketed IP address
-        *                        of server
-     * @param int    $port       TCP port number
-     * @param string $flags      Optional flags
-     * @param array  $parameters Connection parameters
+     * @param string $hostname Internet domain name or bracketed IP address
+     *                        of server
+     * @param int $port TCP port number
+     * @param string $flags Optional flags
+     * @param array $parameters Connection parameters
+     * @param int $options
+     * @throws \RuntimeException
      */
     public function __construct(
         $hostname,
@@ -81,27 +94,40 @@ class Server
     /**
      * Authenticate connection
      *
-     * @param string $username Username
-     * @param string $password Password
-     *
+     * @param AuthCredentialsInterface $auth
      * @return Connection
      * @throws AuthenticationFailedException
      * @throws \InvalidArgumentException
      * @throws \Throwable
      */
-    public function authenticate($username, $password)
+    public function authenticate(AuthCredentialsInterface $auth)
     {
         // Wrap imap_open, which gives notices instead of exceptions
         set_error_handler([$this,'errorHandler']);
         $this->lastError = null;
 
+
+        $params = $this->parameters;
+
+        $usedAuth = $auth->getFallBackTypes();
+        $usedAuth[] = $auth->getType();
+        $disabledAuths = array_diff(static::$authTypes, $usedAuth);
+
+        if (!empty($disabledAuths)) {
+            if (isset($params['DISABLE_AUTHENTICATOR'])) {
+                $disabledAuths = array_merge((array)$params['DISABLE_AUTHENTICATOR'], $disabledAuths);
+                $disabledAuths = array_unique($disabledAuths);
+            }
+            $params ['DISABLE_AUTHENTICATOR'] = $disabledAuths;
+        }
+
         $resource = imap_open(
             $this->getServerString(),
-            $username,
-            $password,
+            $auth->getUsername(),
+            $auth->getPassword(),
             $this->options,
             1,
-            $this->parameters
+            $params
         );
 
         restore_error_handler();
@@ -110,7 +136,7 @@ class Server
         }
 
         if (false === $resource) {
-            throw new AuthenticationFailedException($username);
+            throw new AuthenticationFailedException($auth->getUsername()?:$auth->getType());
         }
 
 
