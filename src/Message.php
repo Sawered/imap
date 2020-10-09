@@ -298,8 +298,10 @@ class Message extends Message\Part
     /**
      * Returns part by subtype
      *
-     * @return Message\Part
-     **/
+     * @param string $subtype
+     * @return bool
+     * @throws Exception\Exception
+     */
     public function hasBodyType($subtype)
     {
         $this->checkStream();
@@ -321,7 +323,7 @@ class Message extends Message\Part
                 return true;
             }
             foreach($part->parts as $subPart){
-                array_push($list,$subPart);
+                array_push($list, $subPart);
             }
         }
 
